@@ -1,0 +1,264 @@
+
+    Planilha3.Range("AD2") = "Aguarde..."
+    application.ScreenUpdating = False
+    Call AbrirConexao
+    Set rs = CreateObject("ADODB.Recordset")
+    listaEmprezaVazia = True
+    listaDiretoriaVazia = True
+    listaStatusVazia = True
+    listaprojetoVazia = True
+    nomeTabelaJoinA = "a."
+    nomeTabelaJoinB = "b."
+    nomeTabelaJoin = "b."
+    strParametroWhere = " WHERE  " & nomeTabelaJoinA & "[projeto] <>''"
+    strParametroDinamico = ""
+    If strSheet = "DashPrincipal" Then
+        strDadosTratados = "dadosTratados"
+    Else
+        strDadosTratados = "dadosTratadoDetalhado"
+    End If
+    clicouListaProjeto = clicouListaProjeto
+    vlrRealizado = 0
+    If limparListaDiretoria = True Then
+        Planilha3.btLimpaFiltroDiretoria.Enabled = False
+        'Percorre lista Diretoria
+        For i = 0 To listaDiretoria.ListCount - 1
+            listaDiretoria.Selected(i) = False
+        Next i
+    End If
+    For i = 0 To listaDiretoria.ListCount - 1
+        If listaDiretoria.Selected(i) Then
+            If listaDiretoriaVazia = True Then
+                strParametroWhere = strParametroWhere & " AND " & nomeTabelaJoinA & "[diretoria] IN  ('" & listaDiretoria.List(i) & "'"
+                listaDiretoriaVazia = False
+            Else
+                strParametroWhere = strParametroWhere & ",'" & listaDiretoria.List(i) & "'"
+            End If
+        End If
+    Next i
+    If listaDiretoriaVazia = False Then
+        strParametroWhere = strParametroWhere & ")"
+        'Ativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroDiretoria.Enabled = True
+    Else
+        'Desativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroDiretoria.Enabled = False
+    End If
+    If limparListaEmpresa = True Then
+        Planilha3.btLimpaFiltroEmpresa.Enabled = False
+        'Carrega Lista Empresas
+        For i = 0 To listaEmpresa.ListCount - 1
+            listaEmpresa.Selected(i) = False
+        Next i
+    End If
+    For i = 0 To listaEmpresa.ListCount - 1
+        If listaEmpresa.Selected(i) Then
+            If listaEmprezaVazia = True Then
+                strParametroWhere = strParametroWhere & " AND " & nomeTabelaJoinA & "[nomeEmpresa] IN  ('" & listaEmpresa.List(i) & "'"
+                listaEmprezaVazia = False
+            Else
+                strParametroWhere = strParametroWhere & ",'" & listaEmpresa.List(i) & "'"
+            End If
+        End If
+    Next i
+    If listaEmprezaVazia = False Then
+        strParametroWhere = strParametroWhere & ")"
+        'Ativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroEmpresa.Enabled = True
+    Else
+        'Desativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroEmpresa.Enabled = False
+    End If
+    If limparListaStatus = True Then
+        'Percorre lista Status
+        Planilha3.btLimpaFiltroStatus.Enabled = False
+        For i = 0 To listaStatus.ListCount - 1
+            listaStatus.Selected(i) = False
+        Next i
+    End If
+    For i = 0 To listaStatus.ListCount - 1
+        If listaStatus.Selected(i) Then
+            If listaStatusVazia = True Then
+                strParametroWhere = strParametroWhere & " AND " & nomeTabelaJoinA & "[Status] IN  ('" & listaStatus.List(i) & "'"
+                listaStatusVazia = False
+            Else
+                strParametroWhere = strParametroWhere & ",'" & listaStatus.List(i) & "'"
+            End If
+        End If
+    Next i
+    If listaStatusVazia = False Then
+        strParametroWhere = strParametroWhere & ")"
+        'Ativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroStatus.Enabled = True
+    Else
+        'Desativa botao limpar filtro
+        planilhaAtual.btLimpaFiltroStatus.Enabled = False
+    End If
+    If limparListaProjeto = True Then
+        Planilha3.btLimparFiltroProjeto.Enabled = False
+        'Percorre lista Projetos
+        For i = 0 To listaProjeto.ListCount - 1
+            listaProjeto.Selected(i) = False
+        Next i
+    End If
+    If strSheet = "DashPrincipal" Then
+        strListaNomeProjeto = "[projeto]"
+    ElseIf strSheet = "DashDetalhado" Then
+        strListaNomeProjeto = "[projeto]"
+    End If
+    For i = 0 To listaProjeto.ListCount - 1
+        If listaProjeto.Selected(i) Then
+            If listaprojetoVazia = True Then
+                strParametroDinamico = strParametroDinamico & " AND " & nomeTabelaJoinB & strListaNomeProjeto & " IN  ('" & listaProjeto.List(i) & "'"
+                listaprojetoVazia = False
+            Else
+                'MsgBox listaprojeto.List(i)
+                strParametroDinamico = strParametroDinamico & ",'" & listaProjeto.List(i) & "'"
+            End If
+        End If
+    Next i
+    If listaprojetoVazia = False Then
+        strParametroDinamico = strParametroDinamico & ")"
+        'Ativa botao limpar filtro
+        planilhaAtual.btLimparFiltroProjeto.Enabled = True
+    Else
+        'Desativa botao limpar filtro
+        planilhaAtual.btLimparFiltroProjeto.Enabled = False
+    End If
+    If clicouListaDiretoria = False And limparListaDiretoria = False And listaDiretoriaVazia = True Then
+        listaDiretoria.Clear
+        sql = "SELECT [diretoria] as diretoria FROM [custoDireto$] "
+        sql = sql & Replace(Replace(strParametroWhere, "b.[", "["), "a.[", "[")
+        If strParametroDinamico <> "" Then
+            sql = sql & Replace(Replace(Replace(strParametroDinamico, "a.[", "["), "projeto", "Projeto"), "b.[", "[")
+        End If
+        sql = sql & " GROUP BY [diretoria]"
+        sql = sql & " ORDER BY [diretoria]"
+        rs.Open sql, cn, 1, 1
+        Do Until rs.EOF
+            listaDiretoria.AddItem rs("diretoria").Value
+            rs.MoveNext
+        Loop
+        rs.Close
+    End If
+    If clicouListaEmpresa = False And limparListaEmpresa = False And listaEmprezaVazia = True Then
+        listaEmpresa.Clear
+        sql = "SELECT [nomeEmpresa] as empresa FROM [custoDireto$] "
+        sql = sql & Replace(Replace(strParametroWhere, "b.[", "["), "a.[", "[")
+        If strParametroDinamico <> "" Then
+            sql = sql & Replace(Replace(Replace(strParametroDinamico, "a.[", "["), "projeto", "Projeto"), "b.[", "[")
+        End If
+        sql = sql & " GROUP BY [nomeEmpresa]"
+        sql = sql & " ORDER BY [nomeEmpresa]"
+        rs.Open sql, cn, 1, 1
+        Do Until rs.EOF
+            listaEmpresa.AddItem rs("empresa").Value
+            rs.MoveNext
+        Loop
+        rs.Close
+    End If
+    If clicouListaStatus = False And limparListaStatus = False And listaStatusVazia = True Then
+        listaStatus.Clear
+        sql = "SELECT [Status] as status FROM [custoDireto$] "
+        sql = sql & Replace(Replace(strParametroWhere, "b.[", "["), "a.[", "[")
+        If strParametroDinamico <> "" Then
+            sql = sql & Replace(Replace(Replace(strParametroDinamico, "a.[", "["), "projeto", "Projeto"), "b.[", "[")
+        End If
+        sql = sql & " GROUP BY [Status]"
+        sql = sql & " ORDER BY [Status]"
+        rs.Open sql, cn, 1, 1
+        Do Until rs.EOF
+            listaStatus.AddItem rs("status").Value
+            rs.MoveNext
+        Loop
+        rs.Close
+    End If
+    If clicouListaProjeto = False And listaprojetoVazia = True Then
+        ' Limpa itens antigos
+        listaProjeto.Clear
+        sql = "SELECT [projeto] as projeto FROM [custoDireto$] "
+        sql = sql & Replace(Replace(strParametroWhere, "b.[", "["), "a.[", "[")
+        If strParametroDinamico <> "" Then
+            sql = sql & Replace(Replace(Replace(strParametroDinamico, "a.[", "["), "projeto", "Projeto"), "b.[", "[")
+        End If
+        sql = sql & " GROUP BY [projeto]"
+        sql = sql & " ORDER BY [projeto]"
+        'MsgBox sql
+        rs.Open sql, cn, 1, 1
+        Do Until rs.EOF
+            listaProjeto.AddItem rs("projeto").Value
+            rs.MoveNext
+        Loop
+        rs.Close
+    End If
+    strSheet = "DashPrincipal"
+    strDadosTratados = "dadosTratados"
+    sql = "SELECT nomeCentro AS centroCusto,sum([orcado]*1)as orcado,sum([disposto]*1) as realizado"
+    sql = sql & " FROM [custoDireto$] "
+    If strParametroWhere <> "" Then
+        sql = sql & Replace(Replace(strParametroWhere, "a.", ""), ".b", "") & Replace(Replace(strParametroDinamico, "a.", ""), "b.", "")
+    End If
+    sql = sql & " GROUP BY " & colunaprojeto
+    sql = sql & " ORDER BY sum([compromissado]*1) DESC"
+    rs.Open sql, cn, 1, 1
+    Set wsDados = ThisWorkbook.Sheets(strDadosTratados)
+    wsDados.Select
+    wsDados.Cells.ClearContents
+    For i = 0 To rs.Fields.Count - 1
+        wsDados.Cells(1, i + 1).Value = rs.Fields(i).Name
+    Next i
+    wsDados.Range("A2").CopyFromRecordset rs
+    ThisWorkbook.Sheets(strSheet).Select
+    ThisWorkbook.Sheets(strDadosTratados).Range("B:C").NumberFormat = "#,##0"
+    rs.Close
+    strSheet = "DashDetalhado"
+    strDadosTratados = "dadosTratadoDetalhado"
+    sql = "SELECT b.descricaoClasseCusto,sum(b.[valorRealizado]*1) as valorMr"
+    sql = sql & " FROM [realizado$] as b"
+    sql = sql & " LEFT JOIN [custoDireto$]  a ON a.[projeto] = b.[projeto]"
+    sql = sql & strParametroWhere & strParametroDinamico
+    sql = sql & " GROUP BY b.descricaoClasseCusto"
+    sql = sql & " ORDER BY sum(b.[valorRealizado]*1)"   
+    rs.Open sql, cn, 1, 1
+    Set wsDados = ThisWorkbook.Sheets(strDadosTratados)
+    wsDados.Select
+    wsDados.Cells.ClearContents
+    For i = 0 To rs.Fields.Count - 1
+        wsDados.Cells(1, i + 1).Value = rs.Fields(i).Name
+    Next i
+    wsDados.Range("A2").CopyFromRecordset rs
+    ThisWorkbook.Sheets("DashPrincipal").Select
+    ThisWorkbook.Sheets(strDadosTratados).Range("B:B").NumberFormat = "#,##0"
+    rs.Close
+        strSheet = "DashPrincipal"
+        strDadosTratados = "dadosTratados"
+        sql = "SELECT sum([orcado]) as investimento, sum([disposto]) as realizado, sum([disponivel]) as saldo, COUNT([projeto]) as qtdProjetos"
+        sql = sql & " FROM [custoDireto$]"
+        sql = sql & Replace(Replace(strParametroWhere, "a.", ""), ".b", "") & Replace(Replace(strParametroDinamico, "b.", ""), ".a", "")
+        rs.Open sql, cn, 1, 1
+        If Not rs.Fields("realizado").Value Then
+            vlrRealizado = rs.Fields("realizado").Value
+            Set ws = ThisWorkbook.Sheets(strSheet)
+            ws.OLEObjects("lblGastos").Object.Caption = "      GASTO " & Chr(10) & "      " & Format(rs.Fields("realizado").Value, "R$ #,##0")
+        End If
+        If Not rs.Fields("investimento").Value Then
+            ws.OLEObjects("lblInvestimento").Object.Caption = "      INVESTIMENTO" & Chr(10) & "      " & Format(rs.Fields("investimento").Value, "R$ #,##0")
+            ws.OLEObjects("lblSaldo").Object.Caption = "      SALD0 " & Chr(10) & "      " & Format(rs.Fields("saldo").Value, "R$ #,##0")
+            ws.OLEObjects("lblQtdProjeto").Object.Caption = "      QTD PROJETOS " & Chr(10) & "      " & Format(rs.Fields("qtdProjetos").Value, "#,##0")
+        End If
+        rs.Close
+    strSheet = "DashPrincipal"
+    strDadosTratados = "dadosTratados"
+    ultimaLinha = ThisWorkbook.Sheets(strDadosTratados).Cells(Rows.Count, "A").End(xlUp).Row
+    If ultimaLinha > 1 Then
+        Call graficoAlterarIntervalo(2, ultimaLinha, "Gráfico 4", vlrRealizado, strDadosTratados, listaDiretoria)
+    End If
+    strSheet = "DashPrincipal"
+    strDadosTratados = "dadosTratadoDetalhado"
+    ultimaLinha = ThisWorkbook.Sheets(strDadosTratados).Cells(Rows.Count, "A").End(xlUp).Row
+    If ultimaLinha > 1 Then
+        Call graficoAlterarIntervalo2(2, ultimaLinha, "Gráfico 32", vlrRealizado, strDadosTratados, listaDiretoria)
+    End If   
+    Set rs = Nothing
+    Set cn = Nothing
+   
